@@ -25,3 +25,7 @@ body {
     text-wrap: balance;
   }
 }
+
+@media print {
+  nav, .no-print { display: none !important; }
+}
