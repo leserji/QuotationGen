@@ -37,7 +37,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
         <div className="flex justify-between items-start mb-8 print:mb-6">
           <h1 className="text-3xl font-bold print:text-2xl">QUOTATION</h1>
           <div className="text-3xl font-bold tracking-tight print:text-2xl">
-            Carv<span style={{ color: '#c45c26' }}>e</span>
+            Carve<span style={{ color: '#c45c26' }}>.</span>
           </div>
         </div>
         <div className="mb-8 print:mb-6">
