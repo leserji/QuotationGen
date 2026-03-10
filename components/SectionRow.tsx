@@ -42,7 +42,7 @@ export default function SectionRow({ name, subtotal, currency, isFirst, isLast, 
         />
       </td>
       <td className="px-3 py-2 text-right font-semibold">
-        {currency} {subtotal.toFixed(2)}
+        {currency} {Math.round(subtotal).toLocaleString()}
       </td>
       <td className="px-3 py-2 text-right">
         <button onClick={onAddItem} className="text-blue-600 hover:text-blue-800 text-sm mr-2">+ Item</button>

@@ -17,6 +17,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const id = parseInt(idStr)
   const body = await req.json()
 
+  // Fast-path: status-only update from list view
+  if (Object.keys(body).length === 1 && 'status' in body) {
+    const q = await prisma.quotation.update({ where: { id }, data: { status: body.status } })
+    return NextResponse.json(q)
+  }
+
   // Delete existing sections and items, then recreate
   await prisma.lineItem.deleteMany({ where: { quotationId: id } })
   await prisma.section.deleteMany({ where: { quotationId: id } })
@@ -57,6 +63,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       clientName: body.clientName,
       currency: body.currency,
       notes: body.notes || '',
+      status: body.status,
     },
     include: { sections: { orderBy: { order: 'asc' } }, items: { orderBy: { order: 'asc' } } },
   })
