@@ -10,6 +10,16 @@ interface Quotation {
   clientName: string
   currency: string
   total: number
+  status: string
+}
+
+const STATUS_OPTIONS = ['Draft', 'Sent', 'Accepted', 'Archived'] as const
+
+const STATUS_STYLES: Record<string, string> = {
+  Draft:    'bg-gray-100 text-gray-700',
+  Sent:     'bg-blue-100 text-blue-700',
+  Accepted: 'bg-green-100 text-green-700',
+  Archived: 'bg-amber-100 text-amber-700',
 }
 
 export default function HomePage() {
@@ -27,6 +37,15 @@ export default function HomePage() {
     if (!confirm('Delete this quotation?')) return
     await fetch(`/api/quotations/${id}`, { method: 'DELETE' })
     setQuotations(prev => prev.filter(q => q.id !== id))
+  }
+
+  async function handleStatusChange(id: number, status: string) {
+    setQuotations(prev => prev.map(q => q.id === id ? { ...q, status } : q))
+    await fetch(`/api/quotations/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    })
   }
 
   if (loading) return <div className="max-w-4xl mx-auto p-6">Loading...</div>
@@ -57,6 +76,7 @@ export default function HomePage() {
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Number</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Date</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Client</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Status</th>
               <th className="px-4 py-3 text-right text-sm font-medium text-gray-600">Total</th>
               <th className="px-4 py-3"></th>
             </tr>
@@ -73,8 +93,19 @@ export default function HomePage() {
                   {new Date(q.date).toLocaleDateString()}
                 </td>
                 <td className="px-4 py-3">{q.clientName}</td>
+                <td className="px-4 py-3">
+                  <select
+                    value={q.status}
+                    onChange={e => handleStatusChange(q.id, e.target.value)}
+                    className={`text-xs font-medium px-2 py-1 rounded border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-400 ${STATUS_STYLES[q.status] ?? STATUS_STYLES.Draft}`}
+                  >
+                    {STATUS_OPTIONS.map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </td>
                 <td className="px-4 py-3 text-right">
-                  {q.currency} {q.total.toFixed(2)}
+                  {q.currency} {Math.round(q.total).toLocaleString()}
                 </td>
                 <td className="px-4 py-3 text-right">
                   <button

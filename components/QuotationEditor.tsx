@@ -147,33 +147,88 @@ export default function QuotationEditor({ quotationId, initialData }: Props) {
   }
 
   function moveItemUp(tempId: number) {
-    setItems(prev => {
-      const item = prev.find(i => i.tempId === tempId)
-      if (!item) return prev
-      const peers = prev.filter(i => i.sectionTempId === item.sectionTempId)
-      const peerIdx = peers.findIndex(i => i.tempId === tempId)
-      if (peerIdx <= 0) return prev
+    const item = items.find(i => i.tempId === tempId)
+    if (!item) return
+
+    const peers = items.filter(i => i.sectionTempId === item.sectionTempId)
+    const peerIdx = peers.findIndex(i => i.tempId === tempId)
+
+    if (peerIdx > 0) {
+      // Swap within same group
       const swapWith = peers[peerIdx - 1]
-      const idxA = prev.findIndex(i => i.tempId === swapWith.tempId)
-      const idxB = prev.findIndex(i => i.tempId === tempId)
-      const next = [...prev]
-      ;[next[idxA], next[idxB]] = [next[idxB], next[idxA]]
+      setItems(prev => {
+        const next = [...prev]
+        const idxA = next.findIndex(i => i.tempId === swapWith.tempId)
+        const idxB = next.findIndex(i => i.tempId === tempId)
+        ;[next[idxA], next[idxB]] = [next[idxB], next[idxA]]
+        return next
+      })
+      return
+    }
+
+    // First in its group — cross into previous group
+    if (item.sectionTempId === null) return // already at very top
+
+    const sectionIdx = sections.findIndex(s => s.tempId === item.sectionTempId)
+    const prevGroupTempId = sectionIdx === 0 ? null : sections[sectionIdx - 1].tempId
+
+    setItems(prev => {
+      const next = prev.filter(i => i.tempId !== tempId)
+      const updatedItem = { ...item, sectionTempId: prevGroupTempId }
+      const prevGroupItems = next.filter(i => i.sectionTempId === prevGroupTempId)
+      if (prevGroupItems.length === 0) {
+        // Insert before remaining peers in current section
+        const remainingPeers = next.filter(i => i.sectionTempId === item.sectionTempId)
+        const insertAt = remainingPeers.length > 0
+          ? next.findIndex(i => i.tempId === remainingPeers[0].tempId)
+          : next.length
+        next.splice(insertAt, 0, updatedItem)
+      } else {
+        const lastInPrev = prevGroupItems[prevGroupItems.length - 1]
+        next.splice(next.findIndex(i => i.tempId === lastInPrev.tempId) + 1, 0, updatedItem)
+      }
       return next
     })
   }
 
   function moveItemDown(tempId: number) {
-    setItems(prev => {
-      const item = prev.find(i => i.tempId === tempId)
-      if (!item) return prev
-      const peers = prev.filter(i => i.sectionTempId === item.sectionTempId)
-      const peerIdx = peers.findIndex(i => i.tempId === tempId)
-      if (peerIdx >= peers.length - 1) return prev
+    const item = items.find(i => i.tempId === tempId)
+    if (!item) return
+
+    const peers = items.filter(i => i.sectionTempId === item.sectionTempId)
+    const peerIdx = peers.findIndex(i => i.tempId === tempId)
+
+    if (peerIdx < peers.length - 1) {
+      // Swap within same group
       const swapWith = peers[peerIdx + 1]
-      const idxA = prev.findIndex(i => i.tempId === tempId)
-      const idxB = prev.findIndex(i => i.tempId === swapWith.tempId)
-      const next = [...prev]
-      ;[next[idxA], next[idxB]] = [next[idxB], next[idxA]]
+      setItems(prev => {
+        const next = [...prev]
+        const idxA = next.findIndex(i => i.tempId === tempId)
+        const idxB = next.findIndex(i => i.tempId === swapWith.tempId)
+        ;[next[idxA], next[idxB]] = [next[idxB], next[idxA]]
+        return next
+      })
+      return
+    }
+
+    // Last in its group — cross into next group
+    const sectionIdx = item.sectionTempId === null
+      ? -1
+      : sections.findIndex(s => s.tempId === item.sectionTempId)
+
+    if (sectionIdx >= sections.length - 1) return // already at very bottom
+
+    const nextGroupTempId = sections[sectionIdx + 1].tempId
+
+    setItems(prev => {
+      const next = prev.filter(i => i.tempId !== tempId)
+      const updatedItem = { ...item, sectionTempId: nextGroupTempId }
+      const nextGroupItems = next.filter(i => i.sectionTempId === nextGroupTempId)
+      if (nextGroupItems.length === 0) {
+        next.push(updatedItem)
+      } else {
+        next.splice(next.findIndex(i => i.tempId === nextGroupItems[0].tempId), 0, updatedItem)
+      }
       return next
     })
   }
@@ -229,9 +284,16 @@ export default function QuotationEditor({ quotationId, initialData }: Props) {
   function renderRows() {
     const rows: React.ReactElement[] = []
 
-    // Items with no section first
+    // Global flat order: unsectioned first, then section groups in order
+    const allOrderedItems = [
+      ...items.filter(i => i.sectionTempId === null),
+      ...sections.flatMap(s => items.filter(i => i.sectionTempId === s.tempId)),
+    ]
+    const globalFirst = allOrderedItems[0]?.tempId
+    const globalLast = allOrderedItems[allOrderedItems.length - 1]?.tempId
+
     const unsectionedItems = items.filter(i => i.sectionTempId === null)
-    unsectionedItems.forEach((item, idx) => {
+    unsectionedItems.forEach(item => {
       rows.push(
         <LineItemRow
           key={`item-${item.tempId}`}
@@ -240,8 +302,8 @@ export default function QuotationEditor({ quotationId, initialData }: Props) {
           description={item.description}
           price={item.price}
           currency={currency}
-          isFirst={idx === 0}
-          isLast={idx === unsectionedItems.length - 1}
+          isFirst={item.tempId === globalFirst}
+          isLast={item.tempId === globalLast}
           onChange={(field, value) => updateItem(item.tempId, field, value)}
           onDelete={() => deleteItem(item.tempId)}
           onMoveUp={() => moveItemUp(item.tempId)}
@@ -250,7 +312,6 @@ export default function QuotationEditor({ quotationId, initialData }: Props) {
       )
     })
 
-    // Sections with their items
     sections.forEach((section, sectionIdx) => {
       const sectionItems = items.filter(i => i.sectionTempId === section.tempId)
       rows.push(
@@ -268,7 +329,7 @@ export default function QuotationEditor({ quotationId, initialData }: Props) {
           onMoveDown={() => moveSectionDown(section.tempId)}
         />
       )
-      sectionItems.forEach((item, idx) => {
+      sectionItems.forEach(item => {
         rows.push(
           <LineItemRow
             key={`item-${item.tempId}`}
@@ -277,8 +338,8 @@ export default function QuotationEditor({ quotationId, initialData }: Props) {
             description={item.description}
             price={item.price}
             currency={currency}
-            isFirst={idx === 0}
-            isLast={idx === sectionItems.length - 1}
+            isFirst={item.tempId === globalFirst}
+            isLast={item.tempId === globalLast}
             onChange={(field, value) => updateItem(item.tempId, field, value)}
             onDelete={() => deleteItem(item.tempId)}
             onMoveUp={() => moveItemUp(item.tempId)}
@@ -344,7 +405,7 @@ export default function QuotationEditor({ quotationId, initialData }: Props) {
           <tfoot>
             <tr className="border-t-2 border-gray-300">
               <td colSpan={2} className="px-3 py-3 text-right font-bold">Grand Total</td>
-              <td className="px-3 py-3 text-right font-bold">{currency} {grandTotal.toFixed(2)}</td>
+              <td className="px-3 py-3 text-right font-bold">{currency} {Math.round(grandTotal).toLocaleString()}</td>
               <td></td>
             </tr>
           </tfoot>

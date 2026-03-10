@@ -12,7 +12,8 @@
       "Bash(npm run:*)",
       "Bash(rm:*)",
       "Bash(node_modules/.bin/next:*)",
-      "WebFetch(domain:www.greptile.com)"
+      "WebFetch(domain:www.greptile.com)",
+      "WebFetch(domain:carve-consulting.com)"
     ]
   }
 }

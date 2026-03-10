@@ -34,8 +34,13 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
         }}
       />
       <div className="max-w-4xl mx-auto p-8 print:p-4">
+        <div className="flex justify-between items-start mb-8 print:mb-6">
+          <h1 className="text-3xl font-bold print:text-2xl">QUOTATION</h1>
+          <div className="text-3xl font-bold tracking-tight print:text-2xl">
+            Carv<span style={{ color: '#c45c26' }}>e</span>
+          </div>
+        </div>
         <div className="mb-8 print:mb-6">
-          <h1 className="text-3xl font-bold mb-4 print:text-2xl">QUOTATION</h1>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p><strong>Quotation #:</strong> {quotation.number}</p>
@@ -64,7 +69,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
                   <div>{item.service}</div>
                   {item.description && <div className="text-sm text-gray-600">{item.description}</div>}
                 </td>
-                <td className="py-2 text-right">{Number(item.price).toFixed(2)}</td>
+                <td className="py-2 text-right">{Math.round(Number(item.price)).toLocaleString()}</td>
               </tr>
             ))}
 
@@ -75,7 +80,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
                 <>
                   <tr key={`section-${section.id}`} className="bg-gray-100">
                     <td colSpan={2} className="py-2 font-semibold pl-0">{section.name}</td>
-                    <td className="py-2 text-right font-semibold">{subtotal.toFixed(2)}</td>
+                    <td className="py-2 text-right font-semibold">{Math.round(subtotal).toLocaleString()}</td>
                   </tr>
                   {sectionItems.map(item => (
                     <tr key={item.id} className="border-b border-gray-200">
@@ -84,7 +89,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
                         <div>{item.service}</div>
                         {item.description && <div className="text-sm text-gray-600">{item.description}</div>}
                       </td>
-                      <td className="py-2 text-right">{Number(item.price).toFixed(2)}</td>
+                      <td className="py-2 text-right">{Math.round(Number(item.price)).toLocaleString()}</td>
                     </tr>
                   ))}
                 </>
@@ -94,7 +99,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
           <tfoot>
             <tr className="border-t-2 border-gray-800">
               <td colSpan={2} className="py-3 text-right font-bold text-lg">Grand Total ({quotation.currency})</td>
-              <td className="py-3 text-right font-bold text-lg">{grandTotal.toFixed(2)}</td>
+              <td className="py-3 text-right font-bold text-lg">{Math.round(grandTotal).toLocaleString()}</td>
             </tr>
           </tfoot>
         </table>
@@ -108,8 +113,9 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
       </div>
 
       <style>{`
+        @page { margin: 0; }
         @media print {
-          body { margin: 0; }
+          body { margin: 0; padding: 2cm; }
           .no-print { display: none !important; }
         }
       `}</style>
